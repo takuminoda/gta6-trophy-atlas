@@ -1,101 +1,88 @@
-// store.js — progress state: localStorage persistence, export/import and demo seeding.
-export const STORAGE_KEY = 'leonida-trophy-atlas:v1';
+// store.js — progress state, localStorage persistence and export/import.
+// Only earned ticks, partial counters and the spoiler preference are saved.
+export const STORAGE_KEY = 'leonida-atlas/v2';
+export const EXPORT_FORMAT = 'leonida-trophy-atlas/progress/v2';
 
-// Thirteen trophies the ?demo=1 preview marks as earned: the twelve story trophies plus
-// the 100% Gold, so the screenshots show a real mid-run state.
-export const DEMO_EARNED_IDS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+// ?demo=1 seeds a mid-run board for repeatable screenshots; demo never writes storage.
+export const DEMO_EARNED = [2, 4, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 28, 30];
+export const DEMO_COUNTERS = { 14: 38, 15: 12, 17: 17, 28: 9, 31: 24, 40: 3 };
 
-export const EXPORT_FORMAT = 'leonida-trophy-atlas/progress/v1';
-
-export function createDefaultState() {
+export function createState() {
   return {
-    earnedIds: [],
-    spoiler: true,
-    kind: 'all',
-    grade: 'all',
-    query: '',
-    missableOnly: false,
-    view: 'checklist',
-    selectedId: null,
-    demo: false,
+    earnedIds: [], counters: {}, spoiler: true, revealed: [],
+    kind: 'all', grade: 'all', query: '', view: 'checklist',
+    selectedId: 28, demo: false,
   };
 }
 
-// Read the saved checklist. Only the ticks and the spoiler preference survive a reload;
-// filters and the selected trophy are session state.
-export function loadPersistedState() {
-  const state = createDefaultState();
+export function loadSaved() {
+  const state = createState();
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return state;
-    const saved = JSON.parse(raw);
-    if (Array.isArray(saved.earnedIds)) {
-      state.earnedIds = saved.earnedIds.filter((id) => Number.isInteger(id));
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (!saved) return state;
+    if (Array.isArray(saved.earnedIds)) state.earnedIds = saved.earnedIds.filter(Number.isInteger);
+    if (saved.counters && typeof saved.counters === 'object') {
+      for (const [key, value] of Object.entries(saved.counters)) {
+        if (Number.isInteger(Number(key)) && Number.isInteger(value)) state.counters[Number(key)] = value;
+      }
     }
     if (typeof saved.spoiler === 'boolean') state.spoiler = saved.spoiler;
   } catch {
-    // A missing or unreadable store is not fatal: start from an empty checklist.
+    // A corrupt store simply starts a fresh checklist.
   }
   return state;
 }
 
-export function persistState(state) {
+export function saveState(state) {
+  if (state.demo) return false;
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ earnedIds: state.earnedIds, spoiler: state.spoiler }),
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      earnedIds: state.earnedIds, counters: state.counters, spoiler: state.spoiler,
+    }));
+    return true;
   } catch {
-    // Private browsing or a full store: the checklist still works for this session.
+    return false;
   }
 }
 
-export function clearPersistedState() {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // Ignore: nothing to clear.
-  }
-}
-
-// Demo mode is a preview only — it never writes to localStorage.
-export function applyDemoState(state) {
+export function applyDemo(state) {
   state.demo = true;
-  state.earnedIds = [...DEMO_EARNED_IDS];
+  state.earnedIds = [...DEMO_EARNED];
+  state.counters = { ...DEMO_COUNTERS };
+  return state;
 }
 
-export function isEarned(state, id) {
-  return state.earnedIds.includes(id);
-}
-
-export function setEarned(state, id, earned) {
-  const has = state.earnedIds.includes(id);
-  if (earned && !has) state.earnedIds.push(id);
-  if (!earned && has) state.earnedIds = state.earnedIds.filter((value) => value !== id);
-}
+export function isEarned(state, id) { return state.earnedIds.includes(id); }
 
 export function toggleEarned(state, id) {
-  setEarned(state, id, !isEarned(state, id));
+  state.earnedIds = isEarned(state, id)
+    ? state.earnedIds.filter((value) => value !== id)
+    : [...state.earnedIds, id];
 }
 
-export function earnedCount(state) {
-  return state.earnedIds.length;
+export function setCounter(state, id, value, target) {
+  const max = Math.max(0, target || 0);
+  state.counters[id] = Math.min(max, Math.max(0, value));
+  if (target > 0 && state.counters[id] >= target && !isEarned(state, id)) state.earnedIds.push(id);
 }
 
-export function buildExportPayload(state) {
+export function exportPayload(state) {
   return {
     format: EXPORT_FORMAT,
     earnedIds: [...state.earnedIds].sort((a, b) => a - b),
+    counters: { ...state.counters },
+    spoiler: state.spoiler,
     exportedAt: new Date().toISOString(),
   };
 }
 
-// Accept either this app's export or a bare array of trophy ids.
-export function parseImportedPayload(text) {
+// Accepts this app's export or a bare array of ids from a simpler tracker.
+export function parseImport(text) {
   const raw = JSON.parse(text);
   const ids = Array.isArray(raw) ? raw : raw && raw.earnedIds;
-  if (!Array.isArray(ids)) throw new Error('No earnedIds array found in that file.');
-  const clean = ids.filter((id) => Number.isInteger(id));
-  if (clean.length !== ids.length) throw new Error('The file holds values that are not trophy ids.');
-  return clean;
+  if (!Array.isArray(ids)) throw new Error('No earnedIds array in that file.');
+  if (ids.some((id) => !Number.isInteger(id))) throw new Error('The file holds non-trophy values.');
+  const counters = raw && !Array.isArray(raw) && raw.counters && typeof raw.counters === 'object'
+    ? raw.counters : {};
+  return { earnedIds: ids, counters, spoiler: raw && raw.spoiler };
 }

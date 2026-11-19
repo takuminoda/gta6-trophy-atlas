@@ -3,80 +3,80 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Leonida Trophy Atlas — GTA VI PS5 trophy guide &amp; tracker</title>
-  <meta name="description" content="An offline guide and progress tracker for the 55 PlayStation 5 trophies of Grand Theft Auto VI.">
+  <title>Leonida Trophy Atlas — GTA VI PS5 trophy tracker</title>
+  <meta name="description" content="Offline guide and tracker for all 55 PlayStation 5 trophies in Grand Theft Auto VI.">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="app-header">
-    <div class="brand">
-      <span class="brand-mark" aria-hidden="true"><span class="medal"></span></span>
-      <div class="brand-text">
-        <h1>Leonida Trophy Atlas</h1>
-        <p>Grand Theft Auto VI · PlayStation 5 · 55 trophies</p>
+  <header class="topbar">
+    <div class="identity">
+      <div class="mark" aria-hidden="true"><span>VI</span></div>
+      <div>
+        <h1>LEONIDA <span>TROPHY ATLAS</span></h1>
+        <p>GTA VI · PS5 · OFFLINE GUIDE / TRACKER</p>
       </div>
     </div>
-    <div class="header-right">
-      <div class="progress-block">
-        <div class="progress-bar" role="progressbar" aria-label="Trophies earned">
-          <span class="progress-fill" id="progress-fill"></span>
-        </div>
-        <span class="progress-label" id="progress-label">0 / 55 earned</span>
-      </div>
-      <span class="demo-badge" id="demo-badge" hidden>Preview progress</span>
+    <div class="topbar-progress">
+      <div class="progress-head"><span class="micro">PLATINUM TRACK</span><strong id="progress-label">0 / 55</strong></div>
+      <div class="bar"><span id="progress-fill"></span></div>
+      <div class="grade-breakdown" id="grade-breakdown"></div>
+    </div>
+    <div class="topbar-actions">
+      <span class="state-pill" id="spoiler-state">SPOILERS ON</span>
+      <button class="btn" type="button" data-action="export">Export</button>
+      <button class="btn" type="button" data-action="import">Import</button>
+      <span class="saved-note" id="saved-note">Saved in this browser</span>
     </div>
   </header>
 
-  <div class="toolbar">
-    <div class="toolbar-row">
-      <input type="search" id="search" class="search-input" placeholder="Search a trophy…" aria-label="Search trophies">
-      <div class="chips" id="kind-chips" role="group" aria-label="Filter by kind"></div>
-    </div>
-    <div class="toolbar-row">
-      <label class="select-label" for="grade-filter">Grade
+  <section class="audit" id="audit" aria-label="Guide audit"></section>
+
+  <section class="toolbar">
+    <div class="chips" id="chips" role="group" aria-label="Filter trophies"></div>
+    <div class="toolbar-controls">
+      <label class="select-wrap"><span class="micro">GRADE</span>
         <select id="grade-filter">
-          <option value="all">All grades</option>
+          <option value="all">All</option>
           <option value="platinum">Platinum</option>
           <option value="gold">Gold</option>
           <option value="silver">Silver</option>
           <option value="bronze">Bronze</option>
         </select>
       </label>
-      <label class="toggle"><input type="checkbox" id="missable-filter"> Missable only</label>
-      <label class="toggle"><input type="checkbox" id="spoiler-toggle" checked> Spoiler mode</label>
-      <span class="spacer"></span>
-      <button class="btn" id="export-btn" type="button">Export progress</button>
-      <button class="btn" id="import-btn" type="button">Import progress</button>
+      <label class="search-wrap"><span class="micro">SEARCH</span>
+        <input id="search" type="search" placeholder="Name, mission, chapter…" autocomplete="off">
+      </label>
+      <label class="switch"><input type="checkbox" id="spoiler-toggle" checked><span></span> SPOILERS</label>
     </div>
-  </div>
+  </section>
 
   <nav class="tabs" id="tabs" aria-label="Views">
-    <button class="tab" type="button" data-view="checklist">Checklist</button>
-    <button class="tab" type="button" data-view="roadmap">Platinum roadmap</button>
-    <button class="tab" type="button" data-view="missables">Missables</button>
+    <button class="tab active" type="button" data-view="checklist">01 CHECKLIST</button>
+    <button class="tab" type="button" data-view="roadmap">02 ROADMAP</button>
+    <button class="tab" type="button" data-view="missables">03 MISSABLES</button>
+    <button class="tab" type="button" data-view="save">04 SAVE</button>
+    <span class="tab-status" id="tab-status">ALL 55 PLACED ON THE ROUTE</span>
   </nav>
 
-  <main id="main">
+  <main>
     <section class="view" id="view-checklist">
-      <div class="checklist-layout">
-        <div class="list-pane">
-          <p class="list-summary" id="list-summary"></p>
-          <div class="trophy-list" id="trophy-list"></div>
-        </div>
-        <aside class="detail-pane" id="detail-pane" aria-live="polite"></aside>
+      <div class="list-pane">
+        <div class="pane-head"><span class="micro">TROPHY INDEX</span><span id="list-summary"></span></div>
+        <div class="trophy-list" id="trophy-list"></div>
       </div>
+      <aside class="detail-pane" id="detail-pane" aria-live="polite"></aside>
     </section>
-
     <section class="view" id="view-roadmap" hidden></section>
-    <section class="view" id="view-detail" hidden></section>
     <section class="view" id="view-missables" hidden></section>
+    <section class="view" id="view-save" hidden></section>
   </main>
 
-  <footer class="app-footer">
-    <p>Trophy names, descriptions and grades are the official PlayStation 5 list. The guide text here is original and cites its sources beside each trophy. No Rockstar Games logo or official artwork is used, and the app loads nothing from the network.</p>
+  <footer class="footer">
+    <span>Official names, descriptions and grades: PlayStation. Guides written for this atlas and cited inline. No Rockstar artwork, no runtime network requests.</span>
+    <span id="footer-sources"></span>
   </footer>
 
-  <input type="file" id="import-input" accept="application/json,application/octet-stream" hidden>
+  <input id="import-input" type="file" accept="application/json,.json" hidden>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
